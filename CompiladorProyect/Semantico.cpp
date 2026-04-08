@@ -1,28 +1,10 @@
-// =============================================================================
-//  Semantico.cpp
-//  Implementación del analizador semántico.
-//
-//  Recorre la lista de tokens y aplica reglas semánticas:
-//    1. Registra declaraciones (crear tipo id) en la tabla de símbolos.
-//    2. Verifica que no se redeclare la misma variable.
-//    3. Verifica compatibilidad de tipos en asignaciones.
-//    4. Verifica que los identificadores usados estén declarados.
-//    5. Advierte cuando se usa una variable sin inicializar.
-//    6. Al finalizar imprime la tabla de símbolos.
-// =============================================================================
-
 #include "Semantico.h"
 #include <string>
 using namespace std;
 
-// ---------------------------------------------------------------------------
-//  Definición de la tabla de símbolos (declarada extern en el .h)
-// ---------------------------------------------------------------------------
+
 map<string, Simbolo> tablaSimbolos;
 
-// ---------------------------------------------------------------------------
-//  analizarSemantico
-// ---------------------------------------------------------------------------
 ResultadoSem analizarSemantico(const vector<Token>& tokens) {
     ResultadoSem res;
     res.exitoso = true;
@@ -32,18 +14,14 @@ ResultadoSem analizarSemantico(const vector<Token>& tokens) {
     int i = 0;
     int n = (int)tokens.size();
 
-    // Función lambda para avanzar hasta el próximo ;
     auto saltarHastaFin = [&]() {
         while (i < n && tokens[i].tipo != T_FIN_LINEA) i++;
-        if (i < n) i++; // consume ;
+        if (i < n) i++; 
         };
 
     while (i < n) {
         Token c = tokens[i];
 
-        // ===================================================================
-        //  DECLARACIÓN: crear tipo id [= valor] ;
-        // ===================================================================
         if (c.tipo == T_PALABRA_RESERVADA && c.valor == "crear") {
             i++;
             if (i >= n) break;
@@ -91,9 +69,7 @@ ResultadoSem analizarSemantico(const vector<Token>& tokens) {
             saltarHastaFin();
         }
 
-        // ===================================================================
-        //  ASIGNACIÓN: id = expr ;
-        // ===================================================================
+       
         else if (c.tipo == T_IDENTIFICADOR &&
             i + 1 < n && tokens[i + 1].tipo == T_ASIGNACION) {
 
@@ -125,9 +101,7 @@ ResultadoSem analizarSemantico(const vector<Token>& tokens) {
             saltarHastaFin();
         }
 
-        // ===================================================================
-        //  MOSTRAR: mostrar expr ;
-        //  Verifica que la variable exista y esté inicializada
+        
         // ===================================================================
         else if (c.tipo == T_PALABRA_RESERVADA && c.valor == "mostrar") {
             i++;
@@ -150,9 +124,7 @@ ResultadoSem analizarSemantico(const vector<Token>& tokens) {
             saltarHastaFin();
         }
 
-        // ===================================================================
-        //  USO DE IDENTIFICADOR EN EXPRESIONES (condiciones, etc.)
-        // ===================================================================
+        
         else if (c.tipo == T_IDENTIFICADOR) {
             if (!tablaSimbolos.count(c.valor)) {
                 errores += "  [Linea " + to_string(c.linea) +
@@ -166,9 +138,7 @@ ResultadoSem analizarSemantico(const vector<Token>& tokens) {
         else { i++; }
     }
 
-    // -----------------------------------------------------------------------
-    //  Tabla de símbolos al final del reporte
-    // -----------------------------------------------------------------------
+    
     if (!tablaSimbolos.empty()) {
         errores += "\r\nTABLA DE SIMBOLOS:\r\n";
         errores += string(44, '-') + "\r\n";
@@ -180,7 +150,7 @@ ResultadoSem analizarSemantico(const vector<Token>& tokens) {
             sprintf_s(buf, sizeof(buf), " %-17s| %-8s| %s\r\n",
                 kv.first.c_str(),
                 kv.second.tipo.c_str(),
-                kv.second.inicializado ? "Sí" : "No");
+                kv.second.inicializado ? "Si" : "No");
             errores += buf;
         }
         errores += string(44, '-') + "\r\n";

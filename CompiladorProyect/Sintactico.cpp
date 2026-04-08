@@ -51,7 +51,7 @@ public:
     void esperarFin(int linea) {
         if (!match(T_FIN_LINEA)) {
             errores += "  [Linea " + to_string(linea) +
-                "] Error Sintáctico: Se esperaba ';' al final de la instruccion.\r\n";
+                "] Error Sintactico: Se esperaba ';' al final de la instruccion.\r\n";
             ok = false;
         }
     }
@@ -156,7 +156,7 @@ public:
         parseExpr(lin);
         if (!match(T_PAREN_CI)) {
             errores += "  [Linea " + to_string(lin) +
-                "] Error Sintactico: Se esperaba ')' para cerrar condición de 'si'.\r\n";
+                "] Error Sintactico: Se esperaba ')' para cerrar condicion de 'si'.\r\n";
             ok = false; return;
         }
         parseBloque(lin);
@@ -183,7 +183,7 @@ public:
         parseExpr(lin);
         if (!match(T_PAREN_CI)) {
             errores += "  [Linea " + to_string(lin) +
-                "] Error Sintactico: Se esperaba ')' para cerrar condición de 'mientras'.\r\n";
+                "] Error Sintactico: Se esperaba ')' para cerrar condicion de 'mientras'.\r\n";
             ok = false; return;
         }
         parseBloque(lin);
@@ -197,7 +197,7 @@ public:
         consume(); // "repetir"
 
         if (!match(T_PAREN_AB)) {
-            errores += "  [Línea " + to_string(lin) +
+            errores += "  [Linea " + to_string(lin) +
                 "] Error Sintactico: Se esperaba '(' despues de 'repetir'.\r\n";
             ok = false; return;
         }
@@ -277,7 +277,7 @@ public:
         }
         else {
             errores += "  [Linea " + to_string(lin) +
-                "] Error Sintactico: Se esperaba un valor o identificador, se encontró '" +
+                "] Error Sintactico: Se esperaba un valor o identificador, se encontro '" +
                 c.valor + "'.\r\n";
             ok = false;
             consume();

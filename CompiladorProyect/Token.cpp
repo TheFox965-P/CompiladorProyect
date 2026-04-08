@@ -1,8 +1,3 @@
-// =============================================================================
-//  Token.cpp
-//  Implementación de la función auxiliar tipoTokenStr.
-// =============================================================================
-
 #include "Token.h"
 
 string tipoTokenStr(TipoToken t) {
