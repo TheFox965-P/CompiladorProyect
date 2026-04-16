@@ -22,7 +22,6 @@ static const set<char> simbolosEspeciales = {
     '@', '$', '%', '^', '~', ','
 };
 
-//  Helpers
 static bool esLetra(char c) { return isalpha((unsigned char)c) || c == '_'; }
 static bool esDigito(char c) { return isdigit((unsigned char)c) != 0; }
 
@@ -115,7 +114,6 @@ ResultadoLexico analizarLexico(const string& codigo) {
             tok.valor = string(1, c); tok.tipo = T_SIMBOLO_ESP; i++;
         }
 
-        // error lexico 
         else {
             tok.valor = string(1, c); tok.tipo = T_DESCONOCIDO;
             errores += "  [Linea " + to_string(linea) +
@@ -127,7 +125,6 @@ ResultadoLexico analizarLexico(const string& codigo) {
 
         res.tokens.push_back(tok);
 
-        // Agregar fila 
         char buf[128];
         sprintf_s(buf, sizeof(buf), "  %4d  | %-20s| %s\r\n",
             tok.linea,

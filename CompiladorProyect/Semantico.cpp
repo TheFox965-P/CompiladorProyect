@@ -41,13 +41,12 @@ ResultadoSem analizarSemantico(const vector<Token>& tokens) {
             i++;
             if (i >= n) break;
 
-            string tipo = tokens[i].valor;  i++; // tipo de dato
+            string tipo = tokens[i].valor;  i++;
             if (i >= n) break;
 
             string nombre = tokens[i].valor;
-            int    linDec = tokens[i].linea;   i++; // identificador
+            int    linDec = tokens[i].linea;   i++;
 
-            // ¿Ya fue declarada?
             if (tablaSimbolos.count(nombre)) {
                 errores += "  [Linea " + to_string(linDec) +
                     "] Error Semantico: La variable '" + nombre +
@@ -61,13 +60,11 @@ ResultadoSem analizarSemantico(const vector<Token>& tokens) {
             s.tipo = tipo;
             s.inicializado = false;
 
-            // ¿Tiene asignación inicial?
             if (i < n && tokens[i].tipo == T_ASIGNACION) {
-                i++; // consume =
+                i++;
                 if (i < n) {
                     TipoToken tipoTok = tokens[i].tipo;
 
-                    // Verificar compatibilidad de tipo
                     if (tipo == "entero" && tipoTok == T_NUMERO_DECIMAL) {
                         errores += "  [Linea " + to_string(linDec) +
                             "] Error Semantico: No se puede asignar un valor decimal"
@@ -90,7 +87,7 @@ ResultadoSem analizarSemantico(const vector<Token>& tokens) {
 
             string nombre = c.valor;
             int    linA = c.linea;
-            i += 2; // consume id y =
+            i += 2;
 
             if (!tablaSimbolos.count(nombre)) {
                 errores += "  [Linea " + to_string(linA) +
@@ -99,7 +96,6 @@ ResultadoSem analizarSemantico(const vector<Token>& tokens) {
                 res.exitoso = false;
             }
             else {
-                // Verificar tipo del valor asignado
                 if (i < n) {
                     TipoToken tipoTok = tokens[i].tipo;
                     if (tablaSimbolos[nombre].tipo == "entero" &&
@@ -117,7 +113,6 @@ ResultadoSem analizarSemantico(const vector<Token>& tokens) {
         }
 
         
-        // ===================================================================
         else if (c.tipo == T_PALABRA_RESERVADA && c.valor == "mostrar") {
             i++;
             if (i < n && tokens[i].tipo == T_IDENTIFICADOR) {

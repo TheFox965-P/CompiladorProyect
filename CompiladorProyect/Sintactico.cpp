@@ -1,18 +1,7 @@
-// =============================================================================
-//  Sintactico.cpp
-//  Implementación del analizador sintáctico mediante descenso recursivo.
-//
-//  El parser avanza por la lista de tokens verificando que la estructura
-//  del programa cumpla con la gramática del lenguaje definido.
-// =============================================================================
-
 #include "Sintactico.h"
 #include <string>
 using namespace std;
 
-// ---------------------------------------------------------------------------
-//  Clase Parser (interna a este módulo)
-// ---------------------------------------------------------------------------
 class Parser {
 public:
     const vector<Token>& toks;
@@ -22,9 +11,6 @@ public:
 
     Parser(const vector<Token>& t) : toks(t), pos(0), ok(true) {}
 
-    // -----------------------------------------------------------------------
-    //  Acceso al token actual y consumo
-    // -----------------------------------------------------------------------
     Token current() const {
         if (pos < (int)toks.size()) return toks[pos];
         Token eof; eof.tipo = T_DESCONOCIDO; eof.valor = "EOF"; eof.linea = -1;
@@ -45,9 +31,6 @@ public:
         return true;
     }
 
-    // -----------------------------------------------------------------------
-    //  Espera el fin de línea ;
-    // -----------------------------------------------------------------------
     void esperarFin(int linea) {
         if (!match(T_FIN_LINEA)) {
             errores += "  [Linea " + to_string(linea) +
@@ -56,9 +39,6 @@ public:
         }
     }
 
-    // -----------------------------------------------------------------------
-    //  programa → sentencia*
-    // -----------------------------------------------------------------------
     void parsePrograma() {
         while (pos < (int)toks.size()) {
             int posAnterior = pos;
@@ -75,9 +55,6 @@ public:
         }
     }
 
-    // -----------------------------------------------------------------------
-    //  sentencia → declaracion | mostrar | si | mientras | repetir | duplicar | reiniciar | asignacion
-    // -----------------------------------------------------------------------
     void parseSentencia() {
         Token c = current();
         if (c.tipo == T_DESCONOCIDO) { consume(); return; }
@@ -124,52 +101,42 @@ public:
         return "Se esperaba un identificador despues de '" + palabra + "'.";
     }
 
-    // -----------------------------------------------------------------------
-    //  declaracion → "crear" tipo_dato ID ["=" expr] ";"
-    // -----------------------------------------------------------------------
     void parseDeclaracion() {
         int lin = current().linea;
-        consume(); // "crear"
+        consume();
 
         if (current().tipo != T_TIPO_DATO) {
             errores += "  [Linea " + to_string(lin) +
                 "] Error Sintactico: Se esperaba tipo de dato (entero|decimal) despues de 'crear'.\r\n";
             ok = false; return;
         }
-        consume(); // tipo
+        consume();
 
         if (current().tipo != T_IDENTIFICADOR) {
             errores += "  [Linea " + to_string(lin) +
                 "] Error Sintactico: Se esperaba nombre de variable en la declaracion.\r\n";
             ok = false; return;
         }
-        consume(); // id
+        consume();
 
-        // Inicialización opcional
         if (current().tipo == T_ASIGNACION) {
-            consume(); // =
+            consume();
             parseExpr(lin);
         }
 
         esperarFin(lin);
     }
 
-    // -----------------------------------------------------------------------
-    //  mostrar → "mostrar" expr ";"
-    // -----------------------------------------------------------------------
     void parseMostrar() {
         int lin = current().linea;
-        consume(); // "mostrar"
+        consume();
         parseExpr(lin);
         esperarFin(lin);
     }
 
-    // -----------------------------------------------------------------------
-    //  si_stmt → "si" "(" expr ")" bloque ["sino" bloque]
-    // -----------------------------------------------------------------------
     void parseSi() {
         int lin = current().linea;
-        consume(); // "si"
+        consume();
 
         if (!match(T_PAREN_AB)) {
             errores += "  [Linea " + to_string(lin) +
@@ -184,19 +151,15 @@ public:
         }
         parseBloque(lin);
 
-        // Parte opcional: sino
         if (current().tipo == T_PALABRA_RESERVADA && current().valor == "sino") {
             consume();
             parseBloque(lin);
         }
     }
 
-    // -----------------------------------------------------------------------
-    //  mientras_stmt → "mientras" "(" expr ")" bloque
-    // -----------------------------------------------------------------------
     void parseMientras() {
         int lin = current().linea;
-        consume(); // "mientras"
+        consume();
 
         if (!match(T_PAREN_AB)) {
             errores += "  [Linea " + to_string(lin) +
@@ -212,12 +175,9 @@ public:
         parseBloque(lin);
     }
 
-    // -----------------------------------------------------------------------
-    //  repetir_stmt → "repetir" "(" NUM_ENTERO ")" bloque
-    // -----------------------------------------------------------------------
     void parseRepetir() {
         int lin = current().linea;
-        consume(); // "repetir"
+        consume();
 
         if (!match(T_PAREN_AB)) {
             errores += "  [Linea " + to_string(lin) +
@@ -230,7 +190,7 @@ public:
             ok = false;
         }
         else {
-            consume(); // número de iteraciones
+            consume();
         }
         if (!match(T_PAREN_CI)) {
             errores += "  [Linea " + to_string(lin) +
@@ -255,12 +215,9 @@ public:
         esperarFin(lin);
     }
 
-    // -----------------------------------------------------------------------
-    //  asignacion → ID "=" expr ";"
-    // -----------------------------------------------------------------------
     void parseAsignacion() {
         int lin = current().linea;
-        consume(); // ID
+        consume();
 
         if (!match(T_ASIGNACION)) {
             errores += "  [Linea " + to_string(lin) +
@@ -271,9 +228,6 @@ public:
         esperarFin(lin);
     }
 
-    // -----------------------------------------------------------------------
-    //  bloque → "{" sentencia* "}"
-    // -----------------------------------------------------------------------
     void parseBloque(int lin) {
         if (!match(T_LLAVE_AB)) {
             errores += "  [Linea " + to_string(lin) +
@@ -290,9 +244,6 @@ public:
         }
     }
 
-    // -----------------------------------------------------------------------
-    //  expr → term ((OP_ARIT | OP_REL | OP_IGUAL) term)*
-    // -----------------------------------------------------------------------
     void parseExpr(int lin) {
         parseTerm(lin);
         while (current().tipo == T_OPERADOR_ARIT ||
@@ -303,9 +254,6 @@ public:
         }
     }
 
-    // -----------------------------------------------------------------------
-    //  term → ID | NUM_ENTERO | NUM_DECIMAL
-    // -----------------------------------------------------------------------
     void parseTerm(int lin) {
         Token c = current();
         if (c.tipo == T_NUMERO_ENTERO ||
@@ -323,9 +271,6 @@ public:
     }
 };
 
-// ---------------------------------------------------------------------------
-//  Función pública del módulo
-// ---------------------------------------------------------------------------
 ResultadoSint analizarSintactico(const vector<Token>& tokens) {
     Parser p(tokens);
     p.parsePrograma();

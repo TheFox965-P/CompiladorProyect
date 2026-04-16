@@ -1,8 +1,3 @@
-// =============================================================================
-//  main.cpp
-//  Punto de entrada de la aplicacion Windows.
-// =============================================================================
-
 #include <windows.h>
 #include <commctrl.h>
 #include "Ventana.h"
