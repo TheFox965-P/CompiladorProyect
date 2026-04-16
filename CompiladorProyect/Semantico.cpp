@@ -5,6 +5,21 @@ using namespace std;
 
 map<string, Simbolo> tablaSimbolos;
 
+static bool esNumeroCompatible(const Simbolo& simbolo) {
+    return simbolo.tipo == "entero" || simbolo.tipo == "decimal";
+}
+
+static bool convertirANumero(const string& valor, double& numero) {
+    try {
+        size_t idx = 0;
+        numero = stod(valor, &idx);
+        return idx == valor.size();
+    }
+    catch (...) {
+        return false;
+    }
+}
+
 ResultadoSem analizarSemantico(const vector<Token>& tokens) {
     ResultadoSem res;
     res.exitoso = true;
@@ -119,6 +134,58 @@ ResultadoSem analizarSemantico(const vector<Token>& tokens) {
                     errores += "  [Linea " + to_string(linM) +
                         "] Advertencia Semantica: La variable '" + nombre +
                         "' se usa sin haber sido inicializada.\r\n";
+                }
+            }
+            saltarHastaFin();
+        }
+
+        else if (c.tipo == T_PALABRA_RESERVADA &&
+            (c.valor == "duplicar" || c.valor == "reiniciar")) {
+            string operacion = c.valor;
+            i++;
+
+            if (i < n && tokens[i].tipo == T_IDENTIFICADOR) {
+                string nombre = tokens[i].valor;
+                int linOp = tokens[i].linea;
+
+                if (!tablaSimbolos.count(nombre)) {
+                    errores += "  [Linea " + to_string(linOp) +
+                        "] Error Semantico: La variable '" + nombre +
+                        "' no ha sido declarada.\r\n";
+                    res.exitoso = false;
+                }
+                else if (!esNumeroCompatible(tablaSimbolos[nombre])) {
+                    errores += "  [Linea " + to_string(linOp) +
+                        "] Error Semantico: La operacion '" + operacion +
+                        "' solo puede usarse con variables numericas.\r\n";
+                    res.exitoso = false;
+                }
+                else {
+                    if (operacion == "reiniciar") {
+                        tablaSimbolos[nombre].valor =
+                            (tablaSimbolos[nombre].tipo == "decimal") ? "0.0" : "0";
+                        tablaSimbolos[nombre].inicializado = true;
+                    }
+                    else {
+                        double numero = 0.0;
+                        if (!tablaSimbolos[nombre].inicializado ||
+                            !convertirANumero(tablaSimbolos[nombre].valor, numero)) {
+                            errores += "  [Linea " + to_string(linOp) +
+                                "] Error Semantico: La variable '" + nombre +
+                                "' debe tener un valor numerico inicializado para usar 'duplicar'.\r\n";
+                            res.exitoso = false;
+                        }
+                        else {
+                            numero *= 2.0;
+                            if (tablaSimbolos[nombre].tipo == "entero") {
+                                tablaSimbolos[nombre].valor = to_string((int)numero);
+                            }
+                            else {
+                                tablaSimbolos[nombre].valor = to_string(numero);
+                            }
+                            tablaSimbolos[nombre].inicializado = true;
+                        }
+                    }
                 }
             }
             saltarHastaFin();

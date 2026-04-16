@@ -6,7 +6,12 @@ using namespace std;
 
 static const set<string> palabrasReservadas = {
     "crear", "mostrar", "repetir",
-    "si", "sino", "mientras"
+    "si", "sino", "mientras",
+    "duplicar", "reiniciar"
+};
+
+static const set<string> operadoresPalabra = {
+    "aumentar"
 };
 
 static const set<string> tiposDato = {
@@ -38,15 +43,9 @@ ResultadoLexico analizarLexico(const string& codigo) {
     while (i < n) {
         char c = codigo[i];
 
-        // Comentarios 
         if (c == '\n') { linea++; i++; continue; }
 
         if (isspace((unsigned char)c)) { i++; continue; }
-
-        if (c == '/' && i + 1 < n && codigo[i + 1] == '/') {
-            while (i < n && codigo[i] != '\n') i++;
-            continue;
-        }
 
         Token tok;
         tok.linea = linea;
@@ -59,6 +58,8 @@ ResultadoLexico analizarLexico(const string& codigo) {
 
             if (palabrasReservadas.count(word))
                 tok.tipo = T_PALABRA_RESERVADA;
+            else if (operadoresPalabra.count(word))
+                tok.tipo = T_OPERADOR_ARIT;
             else if (tiposDato.count(word))
                 tok.tipo = T_TIPO_DATO;
             else
@@ -96,7 +97,7 @@ ResultadoLexico analizarLexico(const string& codigo) {
             tok.valor = string(1, c); tok.tipo = T_OPERADOR_REL; i++;
         }
 
-        else if (c == '+' || c == '-' || c == '*' || c == '/') {
+        else if (c == '-' || c == '*' || c == '/') {
             tok.valor = string(1, c); tok.tipo = T_OPERADOR_ARIT; i++;
         }
 

@@ -24,6 +24,10 @@ EstadoEtapa estadoLex = INACTIVO;
 EstadoEtapa estadoSint = INACTIVO;
 EstadoEtapa estadoSem = INACTIVO;
 
+static int tamSeguro(int valor, int minimo) {
+    return (valor < minimo) ? minimo : valor;
+}
+
 
 void ejecutarAnalisis() {
     int len = GetWindowTextLengthA(hEditIn);
@@ -129,25 +133,32 @@ void dibujarBoton(HWND hBtn, HDC hdc) {
         DeleteObject(linePen);
     }
 
+    HPEN oldPen = (HPEN)SelectObject(hdc, GetStockObject(DC_PEN));
+    HFONT oldFont = (HFONT)SelectObject(hdc, hFontBtn);
+
     HPEN penOuter = CreatePen(PS_SOLID, 2, RGB(160, 110, 255));
-    SelectObject(hdc, penOuter);
+    HPEN prevPen = (HPEN)SelectObject(hdc, penOuter);
     MoveToEx(hdc, rc.left, rc.top, NULL);
     LineTo(hdc, rc.right - 1, rc.top);
     LineTo(hdc, rc.right - 1, rc.bottom - 1);
     LineTo(hdc, rc.left, rc.bottom - 1);
     LineTo(hdc, rc.left, rc.top);
+    SelectObject(hdc, prevPen);
     DeleteObject(penOuter);
 
     HPEN penShine = CreatePen(PS_SOLID, 1, RGB(200, 170, 255));
-    SelectObject(hdc, penShine);
+    prevPen = (HPEN)SelectObject(hdc, penShine);
     MoveToEx(hdc, rc.left + 2, rc.top + 1, NULL);
     LineTo(hdc, rc.right - 2, rc.top + 1);
+    SelectObject(hdc, prevPen);
     DeleteObject(penShine);
 
     SetBkMode(hdc, TRANSPARENT);
     SetTextColor(hdc, RGB(240, 235, 255));
-    SelectObject(hdc, hFontBtn);
     DrawTextA(hdc, "ANALIZAR", -1, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+
+    SelectObject(hdc, oldFont);
+    SelectObject(hdc, oldPen);
 }
 
 
@@ -159,29 +170,35 @@ void dibujarEtiqueta(HWND hLbl, HDC hdc, EstadoEtapa estado, const char* nombre)
     if (estado == OK_STAGE)    color = CLR_OK;
     if (estado == ERROR_STAGE) color = CLR_ERR;
 
+    HPEN oldPen = (HPEN)SelectObject(hdc, GetStockObject(DC_PEN));
+    HFONT oldFont = (HFONT)SelectObject(hdc, hFontLabel);
+
     HBRUSH br = CreateSolidBrush(CLR_PANEL);
     FillRect(hdc, &rc, br);
     DeleteObject(br);
 
     HPEN penBorder = CreatePen(PS_SOLID, 1, CLR_BORDER);
-    SelectObject(hdc, penBorder);
+    HPEN prevPen = (HPEN)SelectObject(hdc, penBorder);
     MoveToEx(hdc, rc.left, rc.top, NULL);
     LineTo(hdc, rc.right - 1, rc.top);
     LineTo(hdc, rc.right - 1, rc.bottom - 1);
     LineTo(hdc, rc.left, rc.bottom - 1);
     LineTo(hdc, rc.left, rc.top);
+    SelectObject(hdc, prevPen);
     DeleteObject(penBorder);
 
     HPEN penBar = CreatePen(PS_SOLID, 3, color);
-    SelectObject(hdc, penBar);
+    prevPen = (HPEN)SelectObject(hdc, penBar);
     MoveToEx(hdc, rc.left + 1, rc.top + 4, NULL);
     LineTo(hdc, rc.left + 1, rc.bottom - 4);
+    SelectObject(hdc, prevPen);
     DeleteObject(penBar);
 
     HPEN penLine = CreatePen(PS_SOLID, 2, color);
-    SelectObject(hdc, penLine);
+    prevPen = (HPEN)SelectObject(hdc, penLine);
     MoveToEx(hdc, rc.left + 4, rc.bottom - 2, NULL);
     LineTo(hdc, rc.right - 4, rc.bottom - 2);
+    SelectObject(hdc, prevPen);
     DeleteObject(penLine);
 
     const char* prefix = "  o  ";
@@ -191,10 +208,12 @@ void dibujarEtiqueta(HWND hLbl, HDC hdc, EstadoEtapa estado, const char* nombre)
     string label = string(prefix) + nombre;
     SetBkMode(hdc, TRANSPARENT);
     SetTextColor(hdc, color);
-    SelectObject(hdc, hFontLabel);
 
     RECT rcText = { rc.left + 8, rc.top, rc.right, rc.bottom };
     DrawTextA(hdc, label.c_str(), -1, &rcText, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+
+    SelectObject(hdc, oldFont);
+    SelectObject(hdc, oldPen);
 }
 
 
@@ -225,7 +244,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wP, LPARAM lP) {
         int TOP = 80;   
         int BTNH = 46;
         int midX = W / 2;
-        int areaH = H - TOP - BTNH - PAD * 3;
+        int areaH = tamSeguro(H - TOP - BTNH - PAD * 3, 120);
         int lblW = (W - PAD * 4) / 3;
 
         hLblLex = CreateWindowExA(0, "STATIC", "", WS_CHILD | WS_VISIBLE | SS_OWNERDRAW,
@@ -242,9 +261,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wP, LPARAM lP) {
             hWnd, (HMENU)ID_EDIT_INPUT, NULL, NULL);
         SendMessage(hEditIn, WM_SETFONT, (WPARAM)hFontMono, TRUE);
         SetWindowTextA(hEditIn,
-            "// Ingrese su codigo aqui\r\n"
-            "// Las palabras reservadas son: crear, mostrar, repetir\r\n"
-            "// Solamente hay tipos de datos: entero, decimal\r\n"
             "crear entero x = 10;\r\n"
             "crear decimal pi = 3.14;\r\n"
             "si (x > 5) {\r\n"
@@ -253,8 +269,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wP, LPARAM lP) {
             "    mostrar pi;\r\n"
             "}\r\n"
             "mientras (x > 0) {\r\n"
-            "    x = x - 1;\r\n"
+            "    x = x aumentar 1;\r\n"
             "}\r\n"
+            "duplicar x;\r\n"
+            "reiniciar pi;\r\n"
             "repetir (3) {\r\n"
             "    mostrar x;\r\n"
             "}\r\n");
@@ -325,6 +343,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wP, LPARAM lP) {
     case WM_PAINT: {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hWnd, &ps);
+        HPEN oldPen = (HPEN)SelectObject(hdc, GetStockObject(DC_PEN));
+        HFONT oldFont = (HFONT)SelectObject(hdc, hFontTitle);
 
         RECT rc; GetClientRect(hWnd, &rc);
         int W = rc.right, H = rc.bottom;
@@ -340,19 +360,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wP, LPARAM lP) {
         DeleteObject(brBar);
 
         HPEN penAccent = CreatePen(PS_SOLID, 2, CLR_ACCENT);
-        SelectObject(hdc, penAccent);
+        HPEN prevPen = (HPEN)SelectObject(hdc, penAccent);
         MoveToEx(hdc, 0, TOP - 5, NULL);
         LineTo(hdc, W, TOP - 5);
+        SelectObject(hdc, prevPen);
         DeleteObject(penAccent);
 
         HPEN penDiv = CreatePen(PS_SOLID, 1, CLR_BORDER);
-        SelectObject(hdc, penDiv);
+        prevPen = (HPEN)SelectObject(hdc, penDiv);
         MoveToEx(hdc, midX, TOP, NULL);
         LineTo(hdc, midX, TOP + areaH);
+        SelectObject(hdc, prevPen);
         DeleteObject(penDiv);
 
         SetBkMode(hdc, TRANSPARENT);
-        SelectObject(hdc, hFontTitle);
 
         SetTextColor(hdc, CLR_ACCENT);
         TextOutA(hdc, PAD + 2, TOP - 22, "[ CODIGO FUENTE ]", 17);
@@ -365,33 +386,39 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wP, LPARAM lP) {
         DeleteObject(brFoot);
 
         HPEN penFoot = CreatePen(PS_SOLID, 1, CLR_BORDER);
-        SelectObject(hdc, penFoot);
+        prevPen = (HPEN)SelectObject(hdc, penFoot);
         MoveToEx(hdc, 0, H - BTNH - PAD * 2, NULL);
         LineTo(hdc, W, H - BTNH - PAD * 2);
+        SelectObject(hdc, prevPen);
         DeleteObject(penFoot);
 
+        SelectObject(hdc, oldFont);
+        SelectObject(hdc, oldPen);
         EndPaint(hWnd, &ps);
         return 0;
     }
 
     case WM_SIZE: {
+        if (!hLblLex || !hLblSint || !hLblSem || !hEditIn || !hEditOut || !hBtnAnalizar)
+            return 0;
+
         int W = LOWORD(lP), H = HIWORD(lP);
         int PAD = 14;
         int TOP = 80;
         int BTNH = 46;
-        int areaH = H - TOP - BTNH - PAD * 3;
+        int areaH = tamSeguro(H - TOP - BTNH - PAD * 3, 120);
         int midX = W / 2;
-        int lblW = (W - PAD * 4) / 3;
+        int lblW = tamSeguro((W - PAD * 4) / 3, 80);
 
         MoveWindow(hLblLex, PAD, PAD + 2, lblW, 44, TRUE);
         MoveWindow(hLblSint, PAD * 2 + lblW, PAD + 2, lblW, 44, TRUE);
         MoveWindow(hLblSem, PAD * 3 + lblW * 2, PAD + 2, lblW, 44, TRUE);
 
-        MoveWindow(hEditIn, PAD, TOP, midX - PAD - PAD / 2, areaH, TRUE);
-        MoveWindow(hEditOut, midX + PAD / 2, TOP, W - midX - PAD - PAD / 2, areaH, TRUE);
+        MoveWindow(hEditIn, PAD, TOP, tamSeguro(midX - PAD - PAD / 2, 120), areaH, TRUE);
+        MoveWindow(hEditOut, midX + PAD / 2, TOP, tamSeguro(W - midX - PAD - PAD / 2, 120), areaH, TRUE);
 
         int btnW = 220;
-        MoveWindow(hBtnAnalizar, W / 2 - btnW / 2, H - BTNH - PAD, btnW, BTNH, TRUE);
+        MoveWindow(hBtnAnalizar, W / 2 - btnW / 2, tamSeguro(H - BTNH - PAD, 0), btnW, BTNH, TRUE);
         InvalidateRect(hWnd, NULL, TRUE);
         return 0;
     }
@@ -400,6 +427,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wP, LPARAM lP) {
     case WM_COMMAND:
         if (LOWORD(wP) == ID_BTN_ANALIZAR && HIWORD(wP) == BN_CLICKED)
             ejecutarAnalisis();
+        else if (LOWORD(wP) == ID_EDIT_INPUT && HIWORD(wP) == EN_CHANGE) {
+            estadoLex = estadoSint = estadoSem = INACTIVO;
+            SetWindowTextA(hEditOut, "  Texto modificado. Presione ANALIZAR para actualizar el analisis.");
+            InvalidateRect(hWnd, NULL, TRUE);
+        }
         return 0;
 
         

@@ -61,12 +61,22 @@ public:
     // -----------------------------------------------------------------------
     void parsePrograma() {
         while (pos < (int)toks.size()) {
+            int posAnterior = pos;
             parseSentencia();
+
+            if (pos == posAnterior) {
+                Token c = current();
+                errores += "  [Linea " + to_string(c.linea) +
+                    "] Error Sintactico: No se pudo continuar el analisis desde '" +
+                    c.valor + "'.\r\n";
+                ok = false;
+                consume();
+            }
         }
     }
 
     // -----------------------------------------------------------------------
-    //  sentencia → declaracion | mostrar | si | mientras | repetir | asignacion
+    //  sentencia → declaracion | mostrar | si | mientras | repetir | duplicar | reiniciar | asignacion
     // -----------------------------------------------------------------------
     void parseSentencia() {
         Token c = current();
@@ -87,11 +97,20 @@ public:
         else if (c.tipo == T_PALABRA_RESERVADA && c.valor == "repetir") {
             parseRepetir();
         }
+        else if (c.tipo == T_PALABRA_RESERVADA && c.valor == "duplicar") {
+            parseOperacionVariable("duplicar", linMensaje("duplicar"));
+        }
+        else if (c.tipo == T_PALABRA_RESERVADA && c.valor == "reiniciar") {
+            parseOperacionVariable("reiniciar", linMensaje("reiniciar"));
+        }
         else if (c.tipo == T_IDENTIFICADOR) {
             parseAsignacion();
         }
         else if (c.tipo == T_LLAVE_CI) {
-            return; // fin de bloque, el llamador consume }
+            errores += "  [Linea " + to_string(c.linea) +
+                "] Error Sintactico: Llave de cierre '}' inesperada.\r\n";
+            ok = false;
+            consume();
         }
         else {
             errores += "  [Linea " + to_string(c.linea) +
@@ -99,6 +118,10 @@ public:
             ok = false;
             consume();
         }
+    }
+
+    string linMensaje(const string& palabra) {
+        return "Se esperaba un identificador despues de '" + palabra + "'.";
     }
 
     // -----------------------------------------------------------------------
@@ -215,6 +238,21 @@ public:
             ok = false; return;
         }
         parseBloque(lin);
+    }
+
+    void parseOperacionVariable(const string& palabra, const string& mensajeError) {
+        int lin = current().linea;
+        consume();
+
+        if (current().tipo != T_IDENTIFICADOR) {
+            errores += "  [Linea " + to_string(lin) +
+                "] Error Sintactico: " + mensajeError + "\r\n";
+            ok = false;
+            return;
+        }
+
+        consume();
+        esperarFin(lin);
     }
 
     // -----------------------------------------------------------------------
